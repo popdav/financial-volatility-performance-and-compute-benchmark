@@ -1,0 +1,1 @@
+"""Computational efficiency metrics placeholder."""

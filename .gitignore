@@ -216,3 +216,18 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local benchmark data and results
+data/raw/*
+data/processed/*
+data/external/*
+results/runs/*
+results/metrics/*
+results/predictions/*
+
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/external/.gitkeep
+!results/runs/.gitkeep
+!results/metrics/.gitkeep
+!results/predictions/.gitkeep

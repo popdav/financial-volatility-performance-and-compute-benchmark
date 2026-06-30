@@ -1,0 +1,1 @@
+"""Statistical model adapter package."""

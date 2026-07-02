@@ -1,6 +1,6 @@
-"""Benchmark orchestration contracts and shared types."""
+"""Compatibility exports for benchmark types."""
 
-from volatility_benchmark.benchmark.types import (
+from financial_volatility.benchmark.types import (
     Forecast,
     HardwareTarget,
     MetadataValue,

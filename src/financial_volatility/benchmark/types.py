@@ -1,4 +1,4 @@
-"""Benchmark orchestration contracts and shared types."""
+"""Compatibility module for benchmark types."""
 
 from volatility_benchmark.benchmark.types import (
     Forecast,

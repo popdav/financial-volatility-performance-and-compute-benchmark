@@ -5,14 +5,14 @@ from typing import Self
 
 import pytest
 
-from volatility_benchmark.benchmark.types import (
+from financial_volatility.benchmark.types import (
     Forecast,
     HardwareTarget,
     ModelInput,
     ModelMetadata,
     PredictionContext,
 )
-from volatility_benchmark.models import ForecastModel
+from financial_volatility.models import ForecastModel
 
 
 class DummyForecastModel(ForecastModel):

@@ -49,29 +49,30 @@ financial-volatility-performance-and-compute-benchmark/
 │   ├── metrics/
 │   └── predictions/
 ├── src/
-│   └── volatility_benchmark/
+│   └── financial_volatility/
 │       ├── __init__.py
 │       ├── benchmark/
 │       │   ├── runner.py
 │       │   └── splits.py
 │       ├── config/
 │       │   ├── loader.py
-│       │   └── schema.py
+│       │   ├── schema.py
+│       │   └── settings.py
 │       ├── data/
 │       │   ├── loaders.py
-│       │   ├── validation.py
-│       │   └── transforms.py
-│       ├── metrics/
-│       │   ├── accuracy.py
-│       │   └── compute.py
+│       │   └── types.py
+│       ├── evaluation/
+│       │   ├── metrics.py
+│       │   └── results.py
+│       ├── features/
+│       │   └── engineering.py
 │       ├── models/
 │       │   ├── base.py
 │       │   ├── statistical/
 │       │   ├── machine_learning/
 │       │   └── deep_learning/
 │       └── results/
-│           ├── schema.py
-│           └── writer.py
+│           └── storage.py
 ├── tests/
 │   ├── benchmark/
 │   ├── config/
@@ -83,7 +84,10 @@ financial-volatility-performance-and-compute-benchmark/
 └── README.md
 ```
 
-The exact module names may evolve, but the main separation should remain stable: data preparation, model adapters, benchmark orchestration, metrics, configuration, and result storage.
+`financial_volatility` is the canonical package namespace. Older experimental
+namespaces should not be used for new code. The exact module names may evolve,
+but the main separation should remain stable: data preparation, model adapters,
+benchmark orchestration, metrics, configuration, and result storage.
 
 ## 4. Data Flow
 

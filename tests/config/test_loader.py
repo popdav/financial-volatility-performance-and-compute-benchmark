@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from volatility_benchmark.config import BenchmarkConfig, load_config
+from financial_volatility.config import BenchmarkConfig, load_config
 
 
 def test_load_default_config() -> None:

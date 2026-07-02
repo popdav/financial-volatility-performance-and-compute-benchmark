@@ -3,6 +3,6 @@
 
 def test_package_import() -> None:
     """The top-level package is importable."""
-    import volatility_benchmark
+    import financial_volatility
 
-    assert volatility_benchmark.__doc__
+    assert financial_volatility.__doc__

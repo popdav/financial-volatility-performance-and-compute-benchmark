@@ -1,13 +1,13 @@
-"""Configuration schemas and loading helpers."""
+"""Compatibility exports for configuration helpers."""
 
-from volatility_benchmark.config.loader import load_config
-from volatility_benchmark.config.schema import (
+from volatility_benchmark.config import (
     BenchmarkConfig,
     DatasetConfig,
     HardwareConfig,
     ModelConfig,
     OutputConfig,
     TargetConfig,
+    load_config,
 )
 
 __all__ = [

@@ -1,6 +1,5 @@
-"""Configuration schemas and loading helpers."""
+"""Compatibility schema module."""
 
-from volatility_benchmark.config.loader import load_config
 from volatility_benchmark.config.schema import (
     BenchmarkConfig,
     DatasetConfig,
@@ -17,5 +16,4 @@ __all__ = [
     "ModelConfig",
     "OutputConfig",
     "TargetConfig",
-    "load_config",
 ]

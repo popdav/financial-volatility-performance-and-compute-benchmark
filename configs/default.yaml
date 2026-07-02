@@ -1,0 +1,18 @@
+dataset:
+  ticker: SPY
+  start_date: "2015-01-01"
+  end_date: "2025-12-31"
+
+target:
+  name: realized_volatility
+  horizon: 1
+
+model:
+  name: linear_regression
+  parameters: {}
+
+hardware:
+  device: cpu
+
+output:
+  directory: results/

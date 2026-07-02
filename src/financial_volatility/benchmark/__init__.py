@@ -1,5 +1,6 @@
 """Compatibility exports for benchmark types."""
 
+from financial_volatility.benchmark.runner import BenchmarkRunner
 from financial_volatility.benchmark.types import (
     Forecast,
     HardwareTarget,
@@ -11,6 +12,7 @@ from financial_volatility.benchmark.types import (
 )
 
 __all__ = [
+    "BenchmarkRunner",
     "Forecast",
     "HardwareTarget",
     "MetadataValue",

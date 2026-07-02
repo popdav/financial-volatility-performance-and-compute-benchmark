@@ -1,6 +1,7 @@
 """Provider-agnostic market data structures."""
 
 from financial_volatility.data.loaders import load_ohlcv_csv
+from financial_volatility.data.splitting import split_time_series
 from financial_volatility.data.types import (
     OHLCV_COLUMNS,
     MarketDataValidationError,
@@ -18,4 +19,5 @@ __all__ = [
     "TimeSeriesDataset",
     "TrainTestSplit",
     "load_ohlcv_csv",
+    "split_time_series",
 ]

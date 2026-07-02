@@ -1,21 +1,37 @@
-"""Compatibility exports for configuration helpers."""
+"""Configuration settings and YAML loading helpers."""
 
-from volatility_benchmark.config import (
+from financial_volatility.config.settings import (
     BenchmarkConfig,
+    BenchmarkSettings,
     DatasetConfig,
+    DatasetSettings,
     HardwareConfig,
+    HardwareDevice,
+    HardwareSettings,
     ModelConfig,
+    ModelSettings,
     OutputConfig,
+    OutputSettings,
     TargetConfig,
+    TargetSettings,
     load_config,
+    load_settings,
 )
 
 __all__ = [
     "BenchmarkConfig",
+    "BenchmarkSettings",
     "DatasetConfig",
+    "DatasetSettings",
     "HardwareConfig",
+    "HardwareDevice",
+    "HardwareSettings",
     "ModelConfig",
+    "ModelSettings",
     "OutputConfig",
+    "OutputSettings",
     "TargetConfig",
+    "TargetSettings",
     "load_config",
+    "load_settings",
 ]

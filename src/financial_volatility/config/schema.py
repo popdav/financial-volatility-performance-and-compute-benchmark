@@ -1,19 +1,33 @@
 """Compatibility schema module."""
 
-from volatility_benchmark.config.schema import (
+from financial_volatility.config.settings import (
     BenchmarkConfig,
+    BenchmarkSettings,
     DatasetConfig,
+    DatasetSettings,
     HardwareConfig,
+    HardwareDevice,
+    HardwareSettings,
     ModelConfig,
+    ModelSettings,
     OutputConfig,
+    OutputSettings,
     TargetConfig,
+    TargetSettings,
 )
 
 __all__ = [
     "BenchmarkConfig",
+    "BenchmarkSettings",
     "DatasetConfig",
+    "DatasetSettings",
     "HardwareConfig",
+    "HardwareDevice",
+    "HardwareSettings",
     "ModelConfig",
+    "ModelSettings",
     "OutputConfig",
+    "OutputSettings",
     "TargetConfig",
+    "TargetSettings",
 ]

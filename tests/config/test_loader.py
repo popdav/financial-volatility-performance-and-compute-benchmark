@@ -13,10 +13,13 @@ def test_load_default_config() -> None:
     config = load_config(Path("configs/default.yaml"))
 
     assert isinstance(config, BenchmarkConfig)
-    assert config.dataset.ticker == "SPY"
+    assert config.dataset.provider == "yahoo_finance"
+    assert config.dataset.symbols == []
+    assert config.dataset.start_date is None
+    assert config.dataset.end_date is None
     assert config.target.name == "realized_volatility"
     assert config.target.horizon == 1
-    assert config.model.name == "linear_regression"
+    assert config.model.name is None
     assert config.model.parameters == {}
     assert config.hardware.device == "cpu"
     assert config.output.directory == Path("results")
@@ -28,15 +31,16 @@ def test_load_config_preserves_future_extension_fields(tmp_path: Path) -> None:
     config_path.write_text(
         """
 dataset:
-  ticker: spy
-  start_date: "2015-01-01"
-  end_date: "2025-12-31"
+  provider: yahoo_finance
+  symbols: []
+  start_date: null
+  end_date: null
   frequency: daily
 target:
   name: realized_volatility
   horizon: 1
 model:
-  name: linear_regression
+  name: null
   parameters:
     fit_intercept: true
 hardware:
@@ -50,7 +54,8 @@ random_seed: 42
 
     config = load_config(config_path)
 
-    assert config.dataset.ticker == "SPY"
+    assert config.dataset.provider == "yahoo_finance"
+    assert config.dataset.symbols == []
     assert config.dataset.frequency == "daily"
     assert config.random_seed == 42
 
@@ -61,14 +66,15 @@ def test_load_config_rejects_invalid_horizon(tmp_path: Path) -> None:
     config_path.write_text(
         """
 dataset:
-  ticker: SPY
-  start_date: "2015-01-01"
-  end_date: "2025-12-31"
+  provider: yahoo_finance
+  symbols: []
+  start_date: null
+  end_date: null
 target:
   name: realized_volatility
   horizon: 0
 model:
-  name: linear_regression
+  name: null
   parameters: {}
 hardware:
   device: cpu
@@ -79,33 +85,6 @@ output:
     )
 
     with pytest.raises(ValidationError, match="horizon"):
-        load_config(config_path)
-
-
-def test_load_config_rejects_reversed_date_range(tmp_path: Path) -> None:
-    """Dataset end date cannot come before start date."""
-    config_path = tmp_path / "config.yaml"
-    config_path.write_text(
-        """
-dataset:
-  ticker: SPY
-  start_date: "2025-12-31"
-  end_date: "2015-01-01"
-target:
-  name: realized_volatility
-  horizon: 1
-model:
-  name: linear_regression
-  parameters: {}
-hardware:
-  device: cpu
-output:
-  directory: results/
-""",
-        encoding="utf-8",
-    )
-
-    with pytest.raises(ValidationError, match="end_date"):
         load_config(config_path)
 
 

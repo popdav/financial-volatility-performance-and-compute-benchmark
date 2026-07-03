@@ -101,6 +101,8 @@ def test_dummy_model_benchmark_runs_end_to_end() -> None:
     assert metrics["mape"] == pytest.approx(200.0 / 9.0)
     assert metrics["training_time_seconds"] >= 0.0
     assert metrics["inference_time_seconds"] >= 0.0
+    assert metrics["peak_memory_mb"] >= 0.0
+    assert metrics["model_size_mb"] >= 0.0
     assert result.duration_seconds is not None
     assert result.duration_seconds >= 0.0
 

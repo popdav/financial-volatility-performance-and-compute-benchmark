@@ -20,6 +20,8 @@ CSV_COLUMNS = (
     "mape",
     "training_time_seconds",
     "inference_time_seconds",
+    "peak_memory_mb",
+    "model_size_mb",
     "timestamp",
 )
 
@@ -87,6 +89,16 @@ def _result_to_csv_row(result: ExperimentResult) -> CsvRow:
             metric_values,
             result.metadata,
             "inference_time_seconds",
+        ),
+        "peak_memory_mb": _metric_or_metadata_value(
+            metric_values,
+            result.metadata,
+            "peak_memory_mb",
+        ),
+        "model_size_mb": _metric_or_metadata_value(
+            metric_values,
+            result.metadata,
+            "model_size_mb",
         ),
         "timestamp": _timestamp_value(result.metadata),
     }

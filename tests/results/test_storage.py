@@ -31,6 +31,8 @@ def test_csv_export_works_for_one_result(tmp_path: Path) -> None:
         "mape": "10.0",
         "training_time_seconds": "0.25",
         "inference_time_seconds": "0.05",
+        "peak_memory_mb": "1.25",
+        "model_size_mb": "0.5",
         "timestamp": "2026-07-02T12:00:00+00:00",
     }
 
@@ -88,6 +90,8 @@ def test_csv_export_falls_back_to_timing_metadata(tmp_path: Path) -> None:
         metadata={
             "training_time_seconds": 0.25,
             "inference_time_seconds": 0.05,
+            "peak_memory_mb": 1.25,
+            "model_size_mb": 0.5,
             "timestamp": "2026-07-02T12:00:00+00:00",
         },
     )
@@ -97,6 +101,8 @@ def test_csv_export_falls_back_to_timing_metadata(tmp_path: Path) -> None:
     row = _read_rows(path)[0]
     assert row["training_time_seconds"] == "0.25"
     assert row["inference_time_seconds"] == "0.05"
+    assert row["peak_memory_mb"] == "1.25"
+    assert row["model_size_mb"] == "0.5"
 
 
 def _result(experiment_id: str) -> ExperimentResult:
@@ -114,6 +120,8 @@ def _result(experiment_id: str) -> ExperimentResult:
             MetricResult("mape", 10.0, "accuracy", False),
             MetricResult("training_time_seconds", 0.25, "compute", False),
             MetricResult("inference_time_seconds", 0.05, "compute", False),
+            MetricResult("peak_memory_mb", 1.25, "compute", False),
+            MetricResult("model_size_mb", 0.5, "compute", False),
         ),
         metadata={"timestamp": "2026-07-02T12:00:00+00:00"},
     )

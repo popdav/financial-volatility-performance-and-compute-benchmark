@@ -9,6 +9,10 @@ from typing import cast
 
 import numpy.typing as npt
 
+from financial_volatility.benchmark.profiler import (
+    PeakMemoryProfiler,
+    estimate_model_size_mb,
+)
 from financial_volatility.benchmark.types import (
     HardwareTarget,
     MetadataValue,
@@ -37,13 +41,17 @@ class BenchmarkRunner:
         horizon = _infer_horizon(self.test_target_data)
         hardware, hardware_label = _normalize_hardware(self.hardware_target)
 
-        training_started = perf_counter()
-        self.model.train(self.training_data)
-        training_time_seconds = perf_counter() - training_started
+        with PeakMemoryProfiler() as memory_profiler:
+            training_started = perf_counter()
+            self.model.train(self.training_data)
+            training_time_seconds = perf_counter() - training_started
 
-        inference_started = perf_counter()
-        forecast = self.model.predict(self.test_input_data, horizon=horizon)
-        inference_time_seconds = perf_counter() - inference_started
+            inference_started = perf_counter()
+            forecast = self.model.predict(self.test_input_data, horizon=horizon)
+            inference_time_seconds = perf_counter() - inference_started
+            peak_memory_mb = memory_profiler.peak_memory_mb()
+
+        model_size_mb = estimate_model_size_mb(self.model)
         y_true = cast(npt.ArrayLike, self.test_target_data)
         y_pred = cast(npt.ArrayLike, forecast.values)
 
@@ -80,12 +88,26 @@ class BenchmarkRunner:
                 category="compute",
                 higher_is_better=False,
             ),
+            MetricResult(
+                name="peak_memory_mb",
+                value=peak_memory_mb,
+                category="compute",
+                higher_is_better=False,
+            ),
+            MetricResult(
+                name="model_size_mb",
+                value=model_size_mb,
+                category="compute",
+                higher_is_better=False,
+            ),
         )
 
         model_metadata = self.model.metadata()
         metadata: dict[str, MetadataValue] = {
             "training_time_seconds": training_time_seconds,
             "inference_time_seconds": inference_time_seconds,
+            "peak_memory_mb": peak_memory_mb,
+            "model_size_mb": model_size_mb,
         }
         if hardware_label is not None:
             metadata["hardware_label"] = hardware_label

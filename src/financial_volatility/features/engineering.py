@@ -90,6 +90,67 @@ def build_volatility_features(data: pd.DataFrame | OHLCVData) -> pd.DataFrame:
     return frame.dropna()
 
 
+def make_volatility_target(
+    data: pd.DataFrame | OHLCVData,
+    *,
+    horizon: int,
+    log_return_column: str = "log_return_1d",
+    name: str | None = None,
+) -> pd.Series:
+    """Create a future realized-volatility target without lookahead leakage."""
+    if horizon <= 0:
+        raise ValueError("horizon must be positive")
+
+    frame = _ensure_log_returns(_as_dataframe(data))
+    if log_return_column not in frame.columns:
+        msg = f"Data is missing log return column: {log_return_column}"
+        raise ValueError(msg)
+
+    squared_returns = frame[log_return_column].pow(2)
+    future_variance = (
+        squared_returns.shift(-1).iloc[::-1].rolling(window=horizon).sum().iloc[::-1]
+        / horizon
+    )
+    target = pd.Series(
+        np.sqrt(future_variance.to_numpy(dtype=np.float64)),
+        index=future_variance.index,
+    )
+    target.name = name or f"realized_volatility_target_{horizon}d"
+    return target
+
+
+def build_supervised_dataset(
+    data: pd.DataFrame | OHLCVData,
+    *,
+    horizon: int,
+    volatility_windows: tuple[int, ...] = (5, 21),
+    return_lags: tuple[int, ...] = (1, 5),
+    volatility_lags: tuple[int, ...] = (1,),
+    moving_average_windows: tuple[int, ...] = (5, 21),
+) -> tuple[pd.DataFrame, pd.Series]:
+    """Build aligned model features and future realized-volatility target."""
+    frame = add_simple_returns(data)
+    frame = add_log_returns(frame)
+    frame = add_realized_volatility(frame, windows=volatility_windows)
+    frame = add_lagged_returns(frame, lags=return_lags)
+    if volatility_windows:
+        frame = add_lagged_volatility(
+            frame,
+            volatility_column=f"realized_volatility_{volatility_windows[0]}d",
+            lags=volatility_lags,
+        )
+    frame = add_moving_averages(frame, windows=moving_average_windows)
+    target = make_volatility_target(frame, horizon=horizon)
+
+    aligned = frame.join(target, how="inner").dropna()
+    if aligned.empty:
+        raise ValueError("Supervised dataset is empty after alignment")
+
+    y = aligned[target.name]
+    X = aligned.drop(columns=[target.name])
+    return X, y
+
+
 def _as_dataframe(data: pd.DataFrame | OHLCVData) -> pd.DataFrame:
     """Return a defensive DataFrame copy from supported feature inputs."""
     if isinstance(data, OHLCVData):

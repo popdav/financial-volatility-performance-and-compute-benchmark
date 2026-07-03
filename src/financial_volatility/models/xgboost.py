@@ -34,7 +34,7 @@ DEFAULT_XGBOOST_PARAMETERS: Mapping[str, ScalarValue] = {
 }
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, init=False)
 class XGBoostModel(ForecastModel):
     """XGBoost adapter for tabular volatility forecasting features."""
 
@@ -43,7 +43,20 @@ class XGBoostModel(ForecastModel):
     _effective_parameters: dict[str, MetadataValue] = field(init=False, repr=False)
     _is_trained: bool = field(default=False, init=False, repr=False)
 
-    def __post_init__(self) -> None:
+    def __init__(
+        self,
+        parameters: Mapping[str, ScalarValue] | None = None,
+        **xgboost_parameters: ScalarValue,
+    ) -> None:
+        """Create the adapter from a mapping or keyword hyperparameters."""
+        self.parameters = {
+            **dict(parameters or {}),
+            **xgboost_parameters,
+        }
+        self._is_trained = False
+        self._initialize_estimator()
+
+    def _initialize_estimator(self) -> None:
         """Create the wrapped XGBRegressor from configurable parameters."""
         effective_parameters = {
             **DEFAULT_XGBOOST_PARAMETERS,

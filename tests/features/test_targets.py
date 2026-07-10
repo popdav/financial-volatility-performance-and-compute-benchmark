@@ -31,6 +31,16 @@ def test_make_volatility_target_horizon_5_uses_future_returns() -> None:
     assert target.iloc[0] == pytest.approx(expected)
 
 
+def test_make_volatility_target_horizon_21_uses_future_returns() -> None:
+    """The monthly thesis horizon aggregates the next 21 returns."""
+    frame = _return_frame(rows=40)
+
+    target = make_volatility_target(frame, horizon=21)
+
+    expected = np.sqrt(np.mean(np.square(frame["log_return_1d"].iloc[1:22])))
+    assert target.iloc[0] == pytest.approx(expected)
+
+
 def test_make_volatility_target_rejects_invalid_horizon() -> None:
     """Forecast horizons must be positive."""
     with pytest.raises(ValueError, match="horizon"):

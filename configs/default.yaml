@@ -1,15 +1,16 @@
 dataset:
-  provider: yahoo_finance
+  provider: synthetic
   symbols: []
+  test_size: 0.2
   start_date: null
   end_date: null
 
 target:
   name: realized_volatility
-  horizon: 1
+  horizon: 5
 
 model:
-  name: null
+  name: linear_regression
   parameters: {}
 
 hardware:

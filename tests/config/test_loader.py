@@ -13,13 +13,13 @@ def test_load_default_config() -> None:
     config = load_config(Path("configs/default.yaml"))
 
     assert isinstance(config, BenchmarkConfig)
-    assert config.dataset.provider == "yahoo_finance"
+    assert config.dataset.provider == "synthetic"
     assert config.dataset.symbols == []
     assert config.dataset.start_date is None
     assert config.dataset.end_date is None
     assert config.target.name == "realized_volatility"
-    assert config.target.horizon == 1
-    assert config.model.name is None
+    assert config.target.horizon == 5
+    assert config.model.name == "linear_regression"
     assert config.model.parameters == {}
     assert config.hardware.device == "cpu"
     assert config.output.directory == Path("results")

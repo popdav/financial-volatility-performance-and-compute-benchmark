@@ -75,6 +75,13 @@ def add_moving_averages(
     return frame
 
 
+def add_volume_change(data: pd.DataFrame | OHLCVData) -> pd.DataFrame:
+    """Add one-period percentage change in traded volume."""
+    frame = _as_dataframe(data)
+    frame["volume_change"] = frame["volume"].pct_change()
+    return frame
+
+
 def build_volatility_features(data: pd.DataFrame | OHLCVData) -> pd.DataFrame:
     """Build the default volatility forecasting feature set."""
     frame = add_simple_returns(data)
@@ -87,6 +94,7 @@ def build_volatility_features(data: pd.DataFrame | OHLCVData) -> pd.DataFrame:
         lags=(1,),
     )
     frame = add_moving_averages(frame, windows=(5, 21))
+    frame = add_volume_change(frame)
     return frame.dropna()
 
 
@@ -140,6 +148,7 @@ def build_supervised_dataset(
             lags=volatility_lags,
         )
     frame = add_moving_averages(frame, windows=moving_average_windows)
+    frame = add_volume_change(frame)
     target = make_volatility_target(frame, horizon=horizon)
 
     aligned = frame.join(target, how="inner").dropna()

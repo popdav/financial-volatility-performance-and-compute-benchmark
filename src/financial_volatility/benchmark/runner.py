@@ -35,10 +35,12 @@ class BenchmarkRunner:
     hardware_target: HardwareTarget | str = HardwareTarget.AUTO
     dataset_name: str = "default"
     target_name: str = "target"
+    forecast_horizon: int | None = None
 
     def run(self) -> ExperimentResult:
         """Train the model, generate forecasts, and return benchmark results."""
-        horizon = _infer_horizon(self.test_target_data)
+        prediction_count = _infer_prediction_count(self.test_target_data)
+        result_horizon = self.forecast_horizon or prediction_count
         hardware, hardware_label = _normalize_hardware(self.hardware_target)
 
         with PeakMemoryProfiler() as memory_profiler:
@@ -47,7 +49,10 @@ class BenchmarkRunner:
             training_time_seconds = perf_counter() - training_started
 
             inference_started = perf_counter()
-            forecast = self.model.predict(self.test_input_data, horizon=horizon)
+            forecast = self.model.predict(
+                self.test_input_data,
+                horizon=prediction_count,
+            )
             inference_time_seconds = perf_counter() - inference_started
             peak_memory_mb = memory_profiler.peak_memory_mb()
 
@@ -108,6 +113,7 @@ class BenchmarkRunner:
             "inference_time_seconds": inference_time_seconds,
             "peak_memory_mb": peak_memory_mb,
             "model_size_mb": model_size_mb,
+            "prediction_count": prediction_count,
         }
         if hardware_label is not None:
             metadata["hardware_label"] = hardware_label
@@ -115,12 +121,12 @@ class BenchmarkRunner:
         return ExperimentResult(
             experiment_id=(
                 f"{model_metadata.name}:{self.dataset_name}:"
-                f"{self.target_name}:h{horizon}"
+                f"{self.target_name}:h{result_horizon}"
             ),
             model=model_metadata,
             dataset_name=self.dataset_name,
             target_name=self.target_name,
-            horizon=horizon,
+            horizon=result_horizon,
             hardware=hardware,
             metrics=accuracy_metrics + compute_metrics,
             forecast=forecast,
@@ -129,17 +135,17 @@ class BenchmarkRunner:
         )
 
 
-def _infer_horizon(target_data: object) -> int:
-    """Infer forecast horizon from sized target data."""
+def _infer_prediction_count(target_data: object) -> int:
+    """Infer the number of predictions required from sized target data."""
     if not isinstance(target_data, Sized):
-        msg = "test_target_data must be sized so the forecast horizon can be inferred"
+        msg = "test_target_data must be sized so the prediction count can be inferred"
         raise TypeError(msg)
 
-    horizon = len(target_data)
-    if horizon <= 0:
+    prediction_count = len(target_data)
+    if prediction_count <= 0:
         raise ValueError("test_target_data must contain at least one target value")
 
-    return horizon
+    return prediction_count
 
 
 def _normalize_hardware(

@@ -12,6 +12,7 @@ from financial_volatility.benchmark import (
     ModelMetadata,
     PredictionContext,
 )
+from financial_volatility.features.engineering import build_supervised_dataset
 from financial_volatility.models import ForecastModel
 from financial_volatility.pipelines.experiment import ExperimentPipeline
 
@@ -25,6 +26,7 @@ class DummyForecastModel(ForecastModel):
         self.predict_calls = 0
         self.training_timestamps: tuple[object, ...] = ()
         self.prediction_timestamps: tuple[object, ...] = ()
+        self.training_target: pd.Series | None = None
 
     def train(
         self,
@@ -35,6 +37,9 @@ class DummyForecastModel(ForecastModel):
         _ = validation_data
         self.train_calls += 1
         self.training_timestamps = tuple(data.timestamps or ())
+        self.training_target = (
+            data.target if isinstance(data.target, pd.Series) else None
+        )
 
     def predict(self, context: PredictionContext, horizon: int) -> Forecast:
         """Return a deterministic forecast with the requested horizon."""
@@ -87,8 +92,16 @@ def test_experiment_pipeline_runs_end_to_end_with_dummy_model(
     assert len(result_rows) == 1
     assert result_rows["experiment_id"].iloc[0] == result.experiment_id
     assert {"rmse", "mae", "mape"}.issubset(metrics)
+    assert result.target_name == "realized_volatility_target_5d"
+    assert result.horizon == 5
     assert result.forecast is not None
-    assert len(result.forecast.values) == result.horizon
+    assert len(result.forecast.values) == result.metadata["prediction_count"]
+    assert model.training_target is not None
+    _features, expected_target = build_supervised_dataset(
+        pd.read_csv(csv_path, parse_dates=["date"]).set_index("date").sort_index(),
+        horizon=5,
+    )
+    assert model.training_target.iloc[0] == expected_target.iloc[0]
 
 
 def test_experiment_pipeline_preserves_chronological_train_test_split(

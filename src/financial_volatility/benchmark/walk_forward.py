@@ -46,6 +46,7 @@ class WalkForwardBenchmark:
     hardware_target: HardwareTarget | str = HardwareTarget.AUTO
     dataset_name: str = "default"
     target_name: str = "target"
+    forecast_horizon: int | None = None
     results_path: str | Path | None = None
 
     def run(self) -> WalkForwardBenchmarkResult:
@@ -81,6 +82,7 @@ class WalkForwardBenchmark:
                 hardware_target=self.hardware_target,
                 dataset_name=self.dataset_name,
                 target_name=self.target_name,
+                forecast_horizon=self.forecast_horizon,
             ).run()
             fold_results.append(_with_fold_metadata(result, fold_index))
 

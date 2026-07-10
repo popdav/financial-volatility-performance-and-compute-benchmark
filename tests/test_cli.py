@@ -35,12 +35,13 @@ def test_cli_list_models_works() -> None:
 
     assert result.exit_code == 0
     assert "xgboost" in result.output
-    assert "dummy" in result.output
+    assert "linear_regression" in result.output
+    assert "dummy" not in result.output
 
 
-def test_cli_dummy_experiment_can_run(tmp_path: Path) -> None:
-    """The CLI can run a dummy experiment from config."""
-    config_path = _config(tmp_path)
+def test_cli_synthetic_experiment_can_run_with_registered_model(tmp_path: Path) -> None:
+    """The CLI can run a synthetic experiment with a real registered model."""
+    config_path = _config(tmp_path, model_name="linear_regression")
 
     result = CliRunner().invoke(app, ["run", "--config", str(config_path)])
 
@@ -49,7 +50,7 @@ def test_cli_dummy_experiment_can_run(tmp_path: Path) -> None:
     assert result.exit_code == 0
     assert "Experiment complete" in result.output
     assert results_path.exists()
-    assert rows.loc[0, "model_name"] == "dummy"
+    assert rows.loc[0, "model_name"] == "linear_regression"
 
 
 @pytest.mark.parametrize(
@@ -80,7 +81,7 @@ def test_cli_real_experiment_can_run(
 def _config(
     tmp_path: Path,
     *,
-    model_name: str = "dummy",
+    model_name: str = "linear_regression",
     parameters: str = "{}",
 ) -> Path:
     """Write a minimal CLI config file."""
@@ -95,7 +96,6 @@ dataset:
 target:
   name: realized_volatility
   horizon: 5
-  column: realized_volatility_5d
 model:
   name: {model_name}
   parameters: {parameters}

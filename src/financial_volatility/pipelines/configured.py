@@ -31,7 +31,7 @@ def run_experiment_from_config(
         results_path=output_dir / "results.csv",
         test_size=float(getattr(settings.dataset, "test_size", 0.2)),
         date_column=str(getattr(settings.dataset, "date_column", "date")),
-        target_column=_target_column(settings),
+        target_horizon=settings.target.horizon,
         dataset_name=str(getattr(settings.dataset, "name", settings.dataset.provider)),
         hardware_target=HardwareTarget(settings.hardware.device),
     )
@@ -70,18 +70,6 @@ def _dataset_path(settings: BenchmarkSettings) -> Path:
         raise ValueError("local_csv dataset config requires dataset.path")
 
     return Path(str(path))
-
-
-def _target_column(settings: BenchmarkSettings) -> str:
-    """Resolve the target column expected after feature engineering."""
-    explicit_column = getattr(settings.target, "column", None)
-    if explicit_column is not None:
-        return str(explicit_column)
-
-    if settings.target.name == "realized_volatility":
-        return f"realized_volatility_{settings.target.horizon}d"
-
-    return settings.target.name
 
 
 def _scalar_parameter(value: Any) -> ScalarValue:

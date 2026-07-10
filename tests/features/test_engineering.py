@@ -13,6 +13,7 @@ from financial_volatility.features.engineering import (
     add_moving_averages,
     add_realized_volatility,
     add_simple_returns,
+    add_volume_change,
     build_volatility_features,
 )
 
@@ -77,6 +78,15 @@ def test_moving_averages_are_calculated_from_close_prices() -> None:
     assert features["ma_21"].iloc[20] == pytest.approx(frame["close"].iloc[:21].mean())
 
 
+def test_volume_change_is_generated_from_volume() -> None:
+    """Volume change uses one-period percentage change."""
+    frame = _ohlcv_frame()
+
+    features = add_volume_change(frame)
+
+    assert features["volume_change"].iloc[1] == pytest.approx(1001 / 1000 - 1)
+
+
 def test_default_feature_generation_works_on_ohlcv_data() -> None:
     """The default feature set accepts OHLCVData and returns engineered features."""
     data = OHLCVData(_ohlcv_frame())
@@ -98,6 +108,7 @@ def test_default_feature_generation_works_on_ohlcv_data() -> None:
         "volatility_lag_1",
         "ma_5",
         "ma_21",
+        "volume_change",
     ]
     assert not features.isna().any().any()
     assert features.index[0] == pd.Timestamp("2026-01-22")

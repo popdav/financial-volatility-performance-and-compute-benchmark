@@ -13,7 +13,8 @@ from financial_volatility.benchmark.types import ModelInput, PredictionContext
 from financial_volatility.data.loaders import load_ohlcv_csv
 from financial_volatility.data.splitting import split_time_series
 from financial_volatility.evaluation.results import ExperimentResult
-from financial_volatility.features.engineering import build_volatility_features
+from financial_volatility.features.engineering import build_supervised_dataset
+from financial_volatility.features.sequences import build_sequence_dataset
 from financial_volatility.models import ForecastModel
 from financial_volatility.results.storage import write_experiment_results_csv
 
@@ -28,7 +29,7 @@ class ExperimentPipeline:
     test_size: float | None = None
     split_date: str | date | pd.Timestamp | None = None
     date_column: str = "date"
-    target_column: str = "realized_volatility_5d"
+    target_horizon: int = 5
     symbol: str | None = None
     dataset_name: str = "local_csv"
     hardware_target: HardwareTarget | str = HardwareTarget.CPU
@@ -40,46 +41,89 @@ class ExperimentPipeline:
             date_column=self.date_column,
             symbol=self.symbol,
         )
-        features = build_volatility_features(market_data)
-        _validate_target_column(features, self.target_column)
+        features, target = build_supervised_dataset(
+            market_data,
+            horizon=self.target_horizon,
+        )
+        supervised = features.join(target)
 
         split = split_time_series(
-            features,
+            supervised,
             test_size=self.test_size,
             split_date=self.split_date,
             name=self.dataset_name,
         )
         train_frame = split.train.to_dataframe()
         test_frame = split.test.to_dataframe()
-
-        training_data = ModelInput(
-            features=_feature_frame(train_frame, self.target_column),
-            target=train_frame[self.target_column],
-            timestamps=tuple(train_frame.index),
-        )
-        test_input_data = PredictionContext(
-            features=_feature_frame(test_frame, self.target_column),
-            timestamps=tuple(test_frame.index),
+        target_column = str(target.name)
+        training_data, test_input_data, test_target_data = _model_datasets(
+            self.model,
+            train_frame,
+            test_frame,
+            target_column,
         )
 
         result = BenchmarkRunner(
             model=self.model,
             training_data=training_data,
             test_input_data=test_input_data,
-            test_target_data=test_frame[self.target_column],
+            test_target_data=test_target_data,
             hardware_target=self.hardware_target,
             dataset_name=self.dataset_name,
-            target_name=self.target_column,
+            target_name=target_column,
+            forecast_horizon=self.target_horizon,
         ).run()
         write_experiment_results_csv(result, self.results_path)
         return result
 
 
-def _validate_target_column(features: pd.DataFrame, target_column: str) -> None:
-    """Validate that engineered features include the requested target column."""
-    if target_column not in features.columns:
-        msg = f"Feature data is missing target column: {target_column}"
-        raise ValueError(msg)
+def _model_datasets(
+    model: ForecastModel,
+    train_frame: pd.DataFrame,
+    test_frame: pd.DataFrame,
+    target_column: str,
+) -> tuple[ModelInput, PredictionContext, object]:
+    """Build tabular or sequence model inputs from split supervised frames."""
+    sequence_length = getattr(model, "sequence_length", None)
+    if sequence_length is None:
+        train_features = _feature_frame(train_frame, target_column)
+        test_features = _feature_frame(test_frame, target_column)
+        return (
+            ModelInput(
+                features=train_features,
+                target=train_frame[target_column],
+                timestamps=tuple(train_frame.index),
+            ),
+            PredictionContext(
+                features=test_features,
+                timestamps=tuple(test_frame.index),
+            ),
+            test_frame[target_column],
+        )
+
+    sequence_length = int(sequence_length)
+    train_sequences = build_sequence_dataset(
+        _feature_frame(train_frame, target_column),
+        train_frame[target_column],
+        sequence_length=sequence_length,
+    )
+    test_sequences = build_sequence_dataset(
+        _feature_frame(test_frame, target_column),
+        test_frame[target_column],
+        sequence_length=sequence_length,
+    )
+    return (
+        ModelInput(
+            features=train_sequences.X,
+            target=train_sequences.y,
+            timestamps=train_sequences.target_timestamps,
+        ),
+        PredictionContext(
+            features=test_sequences.X,
+            timestamps=test_sequences.target_timestamps,
+        ),
+        test_sequences.y,
+    )
 
 
 def _feature_frame(frame: pd.DataFrame, target_column: str) -> pd.DataFrame:

@@ -19,8 +19,10 @@ Run quality checks:
 
 ```bash
 uv run ruff check .
-uv run mypy
+uv run ruff format --check .
+uv run mypy src
 uv run pytest
+uv run pytest --cov=financial_volatility --cov-report=term-missing
 uv run pre-commit run --all-files
 ```
 
@@ -44,9 +46,14 @@ Run an experiment:
 uv run fvbench run --config configs/default.yaml
 ```
 
-The CLI supports registered model adapters such as `garch`,
-`linear_regression`, and `xgboost`. The config can pass model-specific scalar
-parameters under `model.parameters`.
+`configs/default.yaml` is a minimal reproducible synthetic experiment. It
+generates deterministic OHLCV data, builds future realized-volatility targets
+with horizon 5, trains `linear_regression`, and writes `results/results.csv`.
+
+The CLI supports registered model adapters: `garch`, `linear_regression`,
+`xgboost`, `lstm`, and `transformer`. The config can pass model-specific scalar
+parameters under `model.parameters`; sequence models require a `sequence_length`
+parameter.
 
 ## Project Structure
 
@@ -72,6 +79,10 @@ src/financial_volatility/
 
 Deep learning adapters use PyTorch sequence inputs with shape
 `(samples, sequence_length, features)`.
+
+The configured experiment pipeline automatically converts tabular supervised
+features into sequence tensors when the selected model has a `sequence_length`
+configuration.
 
 ## Outputs
 

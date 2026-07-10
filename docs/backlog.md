@@ -40,7 +40,7 @@ Expected completed items:
 
 ## Task 2.1 — Market Data Types
 
-Status: Completed or in progress
+Status: Completed
 
 Goal:
 
@@ -63,6 +63,8 @@ Acceptance criteria:
 ---
 
 ## Task 2.2 — Local CSV Loader
+
+Status: Completed
 
 Goal:
 
@@ -91,6 +93,8 @@ Acceptance criteria:
 ---
 
 ## Task 2.3 — Yahoo Finance Downloader
+
+Status: Completed
 
 Goal:
 
@@ -121,6 +125,8 @@ Acceptance criteria:
 
 ## Task 2.4 — Parquet Cache
 
+Status: Completed
+
 Goal:
 
 Avoid repeated downloads and make experiments reproducible.
@@ -148,7 +154,7 @@ Acceptance criteria:
 
 ## Task 3.1 — Basic Volatility Features
 
-Status: Completed or in progress
+Status: Completed
 
 Goal:
 
@@ -182,6 +188,8 @@ Acceptance criteria:
 
 ## Task 3.2 — Target Construction
 
+Status: Completed
+
 Goal:
 
 Create forecasting target for realized volatility.
@@ -201,12 +209,15 @@ Acceptance criteria:
 
 * horizon 1 works
 * horizon 5 works
+* horizon 21 works
 * no target uses future data in features
 * tests verify alignment
 
 ---
 
 ## Task 3.3 — Feature Matrix Builder
+
+Status: Completed
 
 Goal:
 
@@ -238,7 +249,7 @@ Acceptance criteria:
 
 ## Task 4.1 — Chronological Train/Test Split
 
-Status: Completed or in progress
+Status: Completed
 
 Goal:
 
@@ -260,6 +271,8 @@ Acceptance criteria:
 ---
 
 ## Task 4.2 — Walk-Forward Splitter
+
+Status: Completed
 
 Goal:
 
@@ -291,6 +304,8 @@ Acceptance criteria:
 
 ## Task 5.1 — BenchmarkRunner Improvements
 
+Status: Completed
+
 Goal:
 
 Ensure all models are evaluated consistently.
@@ -321,7 +336,7 @@ Acceptance criteria:
 
 ## Task 5.2 — Result Storage
 
-Status: Completed or in progress
+Status: Completed
 
 Goal:
 
@@ -356,6 +371,8 @@ Columns:
 
 ## Task 6.1 — Minimal Experiment Pipeline
 
+Status: Completed
+
 Goal:
 
 Run one complete experiment end-to-end.
@@ -389,6 +406,8 @@ Acceptance criteria:
 
 ## Task 6.2 — Configuration-Driven Experiment
 
+Status: Completed
+
 Goal:
 
 Run experiments from YAML.
@@ -412,6 +431,8 @@ Acceptance criteria:
 # Phase 7 — Model Registry
 
 ## Task 7.1 — Model Registry
+
+Status: Completed
 
 Goal:
 
@@ -445,7 +466,7 @@ Acceptance criteria:
 
 ## Task 8.1 — GARCH(1,1)
 
-Status: Completed or in progress
+Status: Completed
 
 Goal:
 
@@ -473,6 +494,8 @@ Acceptance criteria:
 
 ## Task 8.2 — GARCH Walk-Forward Evaluation
 
+Status: Completed
+
 Goal:
 
 Evaluate GARCH in a finance-realistic way.
@@ -495,7 +518,7 @@ Acceptance criteria:
 
 ## Task 9.1 — Linear Regression
 
-Status: Completed or in progress
+Status: Completed
 
 Goal:
 
@@ -522,6 +545,8 @@ Acceptance criteria:
 ---
 
 ## Task 9.2 — XGBoost
+
+Status: Completed
 
 Goal:
 
@@ -551,6 +576,8 @@ Acceptance criteria:
 # Phase 10 — Deep Learning Preparation
 
 ## Task 10.1 — Sequence Dataset Builder
+
+Status: Completed
 
 Goal:
 
@@ -582,6 +609,8 @@ Acceptance criteria:
 
 ## Task 11.1 — LSTM
 
+Status: Completed
+
 Goal:
 
 Implement sequence-based deep learning baseline.
@@ -610,6 +639,11 @@ Acceptance criteria:
 ---
 
 ## Task 11.2 — Transformer / PatchTST
+
+Status: Completed with deviation
+
+Implemented as a compact PyTorch Transformer encoder adapter, not a full
+PatchTST architecture.
 
 Goal:
 
@@ -644,6 +678,8 @@ Acceptance criteria:
 
 ## Task 12.1 — Hardware Profiler
 
+Status: Completed
+
 Goal:
 
 Measure computational efficiency.
@@ -672,6 +708,8 @@ Acceptance criteria:
 
 ## Task 12.2 — GPU Benchmarking
 
+Status: Completed for graceful optional handling
+
 Goal:
 
 Compare CPU and GPU behavior where applicable.
@@ -691,6 +729,8 @@ Acceptance criteria:
 ---
 
 ## Task 12.3 — Optional Tenstorrent Benchmark
+
+Status: Completed as optional detection/documentation
 
 Goal:
 
@@ -712,6 +752,8 @@ Acceptance criteria:
 # Phase 13 — Visualization
 
 ## Task 13.1 — Result Plots
+
+Status: Completed
 
 Goal:
 
@@ -741,6 +783,8 @@ Acceptance criteria:
 
 ## Task 13.2 — Thesis Tables
 
+Status: Completed
+
 Goal:
 
 Generate clean tables for thesis.
@@ -762,6 +806,8 @@ Acceptance criteria:
 
 ## Task 14.1 — Typer CLI Foundation
 
+Status: Completed
+
 Goal:
 
 Run experiments from terminal.
@@ -782,11 +828,13 @@ Acceptance criteria:
 
 * CLI help works
 * config validation works
-* dummy experiment can run
+* real synthetic experiment can run
 
 ---
 
 ## Task 14.2 — Real Experiment CLI
+
+Status: Completed
 
 Goal:
 
@@ -812,6 +860,8 @@ Acceptance criteria:
 
 ## Task 15.1 — README Update
 
+Status: Completed
+
 Add:
 
 * project purpose
@@ -824,6 +874,8 @@ Add:
 
 ## Task 15.2 — Experiment Documentation
 
+Status: Completed
+
 Add:
 
 * dataset description
@@ -835,6 +887,8 @@ Add:
 ---
 
 ## Task 15.3 — Thesis Mapping
+
+Status: Completed
 
 Create `docs/thesis-mapping.md`.
 
@@ -875,7 +929,7 @@ uv run pytest
 uv run ruff check .
 uv run ruff format --check .
 uv run mypy src
-pre-commit run --all-files
+uv run pre-commit run --all-files
 ```
 
 Every task summary must include:

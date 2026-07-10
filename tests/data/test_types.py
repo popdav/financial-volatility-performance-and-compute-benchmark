@@ -68,6 +68,24 @@ def test_duplicate_dates_raise_value_error() -> None:
         OHLCVData(duplicate)
 
 
+def test_missing_ohlcv_values_raise_value_error() -> None:
+    """Missing required values are rejected at the data boundary."""
+    frame = _ohlcv_frame()
+    frame.loc[pd.Timestamp("2026-01-02"), "close"] = None
+
+    with pytest.raises(ValueError, match="missing or non-numeric"):
+        OHLCVData(frame)
+
+
+def test_non_numeric_ohlcv_values_raise_value_error() -> None:
+    """Required OHLCV columns must be numeric."""
+    frame = _ohlcv_frame().astype({"volume": "object"})
+    frame.loc[pd.Timestamp("2026-01-02"), "volume"] = "bad"
+
+    with pytest.raises(ValueError, match="missing or non-numeric"):
+        OHLCVData(frame)
+
+
 def test_time_series_dataset_validates_required_columns() -> None:
     """Generic datasets can specify their own required model-facing columns."""
     dataset = TimeSeriesDataset(

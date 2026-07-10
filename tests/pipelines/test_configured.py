@@ -72,6 +72,8 @@ def test_config_driven_dummy_experiment_works(tmp_path: Path) -> None:
     )
 
     assert result.model.name == "dummy"
+    assert result.target_name == "realized_volatility_target_5d"
+    assert result.horizon == 5
     assert (tmp_path / "results.csv").exists()
 
 
@@ -121,7 +123,6 @@ dataset:
 target:
   name: realized_volatility
   horizon: 5
-  column: realized_volatility_5d
 model:
   name: dummy
   parameters: {{}}

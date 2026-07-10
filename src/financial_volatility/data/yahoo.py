@@ -40,7 +40,7 @@ def download_yahoo_ohlcv(
 def _default_yfinance_downloader(*args: Any, **kwargs: Any) -> pd.DataFrame:
     """Call yfinance.download when yfinance is installed."""
     try:
-        import yfinance as yf  # type: ignore[import-not-found]
+        import yfinance as yf  # type: ignore[import-untyped]
     except ImportError as error:
         msg = "yfinance is required for default Yahoo Finance downloads"
         raise RuntimeError(msg) from error

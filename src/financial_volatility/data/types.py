@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from dataclasses import InitVar, dataclass, field
 from typing import cast
 
+import numpy as np
 import pandas as pd
 
 OHLCV_COLUMNS = ("open", "high", "low", "close", "volume")
@@ -149,6 +150,7 @@ def _validated_frame(
     _validate_required_columns(data, required_columns, label)
     _validate_datetime_index(data, label)
     _validate_chronological_order(_datetime_index(data), label)
+    _validate_required_values(data, required_columns, label)
 
     return data.copy(deep=True)
 
@@ -193,6 +195,23 @@ def _validate_chronological_order(
     if not timestamps.is_unique:
         msg = f"{label} index contains duplicate timestamps"
         raise MarketDataValidationError(msg)
+
+
+def _validate_required_values(
+    data: pd.DataFrame,
+    required_columns: Sequence[str],
+    label: str,
+) -> None:
+    """Validate required columns contain finite numeric values."""
+    for column in required_columns:
+        values = pd.to_numeric(data[column], errors="coerce")
+        if values.isna().any():
+            msg = f"{label} column {column!r} contains missing or non-numeric values"
+            raise MarketDataValidationError(msg)
+
+        if not np.all(np.isfinite(values.to_numpy(dtype=np.float64))):
+            msg = f"{label} column {column!r} contains non-finite values"
+            raise MarketDataValidationError(msg)
 
 
 __all__ = [

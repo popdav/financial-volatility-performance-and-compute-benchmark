@@ -44,6 +44,16 @@ min      67.949997    70.000000    67.099998    68.110001       49.680573  1.436
 max     690.640015   691.659973   689.270020   690.380005      686.730530  8.710263e+08
 ```
 
+## Daily adjusted-price log-return statistics
+
+```text
+              value
+mean       0.000322
+std        0.012191
+skewness  -0.202598
+kurtosis  11.215627
+```
+
 ## Observations by year
 
 ```text

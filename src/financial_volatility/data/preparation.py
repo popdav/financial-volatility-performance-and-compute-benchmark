@@ -252,7 +252,20 @@ def _write_inspection_outputs(
     report = _report_markdown(frame, metadata, yearly, valid_returns)
     report_path = output / "spy_dataset_report.md"
     report_path.write_text(report, encoding="utf-8")
-    summary = pd.DataFrame({"year": yearly.index, "observation_count": yearly.values})
+    return_years = cast(pd.DatetimeIndex, valid_returns.index).year
+    grouped_returns = valid_returns.groupby(return_years)
+    summary = pd.DataFrame(
+        {
+            "year": yearly.index,
+            "observation_count": yearly.values,
+            "log_return_mean": grouped_returns.mean().reindex(yearly.index).values,
+            "log_return_std": grouped_returns.std().reindex(yearly.index).values,
+            "log_return_skewness": grouped_returns.skew().reindex(yearly.index).values,
+            "log_return_kurtosis": grouped_returns.apply(pd.Series.kurt)
+            .reindex(yearly.index)
+            .values,
+        }
+    )
     summary_path = output / "spy_dataset_summary.csv"
     summary.to_csv(summary_path, index=False)
     return report_path, summary_path
@@ -275,6 +288,19 @@ def _report_markdown(
     minimum = pd.Timestamp(returns.idxmin())
     positive = f"{returns.loc[maximum]:.8f} ({maximum.date()})"
     negative = f"{returns.loc[minimum]:.8f} ({minimum.date()})"
+    return_statistics = _text_table(
+        pd.DataFrame(
+            {
+                "value": [
+                    returns.mean(),
+                    returns.std(),
+                    returns.skew(),
+                    returns.kurt(),
+                ]
+            },
+            index=["mean", "std", "skewness", "kurtosis"],
+        )
+    )
     return f"""# SPY Dataset Inspection Report
 
 - Requested range: {metadata["requested_date_range"]}
@@ -297,6 +323,10 @@ COVID-19 period. This is calendar coverage only, not algorithmic regime labeling
 ## Descriptive statistics
 
 {stats}
+
+## Daily adjusted-price log-return statistics
+
+{return_statistics}
 
 ## Observations by year
 

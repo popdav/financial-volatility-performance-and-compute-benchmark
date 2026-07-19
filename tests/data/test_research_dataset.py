@@ -97,6 +97,16 @@ def test_prepare_cache_force_refresh_metadata_and_cli(
     assert metadata["columns"][4] == "adjusted_close"
     assert first.report_path.exists()
     assert first.summary_path.exists()
+    report = first.report_path.read_text(encoding="utf-8")
+    assert "Daily adjusted-price log-return statistics" in report
+    assert "skewness" in report
+    summary = pd.read_csv(first.summary_path)
+    assert {
+        "log_return_mean",
+        "log_return_std",
+        "log_return_skewness",
+        "log_return_kurtosis",
+    }.issubset(summary.columns)
 
     monkeypatch.setattr(
         "financial_volatility.data.preparation._default_yfinance_downloader",

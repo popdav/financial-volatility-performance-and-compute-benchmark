@@ -18,8 +18,16 @@ def test_yahoo_downloader_converts_mocked_response_to_ohlcv_data() -> None:
     frame = data.to_dataframe()
     assert data.symbol == "SPY"
     assert data.provider == "yahoo_finance"
-    assert list(frame.columns) == ["open", "high", "low", "close", "volume"]
-    assert frame["close"].iloc[0] == pytest.approx(100.5)
+    assert list(frame.columns) == [
+        "open",
+        "high",
+        "low",
+        "close",
+        "adjusted_close",
+        "volume",
+    ]
+    assert frame["close"].iloc[0] == pytest.approx(100.0)
+    assert frame["adjusted_close"].iloc[0] == pytest.approx(100.5)
 
 
 def test_yahoo_downloader_rejects_empty_response() -> None:

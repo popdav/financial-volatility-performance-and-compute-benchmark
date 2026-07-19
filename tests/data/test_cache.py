@@ -51,7 +51,7 @@ def test_cache_path_is_deterministic(tmp_path) -> None:
     )
 
     assert first == second
-    assert first.name == "yahoo-finance_spy_20260101_20260201.parquet"
+    assert first.name == "yahoo-finance_spy_20260101_20260201_daily.parquet"
 
 
 def _ohlcv_frame() -> pd.DataFrame:

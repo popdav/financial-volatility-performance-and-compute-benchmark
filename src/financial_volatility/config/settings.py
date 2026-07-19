@@ -23,9 +23,16 @@ class DatasetSettings(ExtensibleSettings):
     """Dataset source and optional date range."""
 
     provider: str = Field(min_length=1)
+    symbol: str | None = None
     symbols: list[str] = Field(default_factory=list)
     start_date: date | None = None
     end_date: date | None = None
+    frequency: str = "daily"
+    cache_format: Literal["parquet"] = "parquet"
+    cache_directory: Path = Path("data/cache")
+    output_directory: Path = Path("data/processed")
+    return_price_column: str = "adjusted_close"
+    drop_invalid_rows: bool = False
 
 
 class TargetSettings(ExtensibleSettings):
@@ -85,6 +92,18 @@ def load_settings(path: str | Path) -> BenchmarkSettings:
     return BenchmarkSettings.model_validate(raw_config)
 
 
+def load_dataset_settings(path: str | Path) -> DatasetSettings:
+    """Load the dataset section from a dataset-only or benchmark YAML file."""
+    config_path = Path(path)
+    with config_path.open(encoding="utf-8") as file:
+        raw_config = yaml.safe_load(file)
+    if not isinstance(raw_config, Mapping) or not isinstance(
+        raw_config.get("dataset"), Mapping
+    ):
+        raise ValueError(f"Configuration must contain a dataset mapping: {config_path}")
+    return DatasetSettings.model_validate(raw_config["dataset"])
+
+
 def load_config(path: str | Path) -> BenchmarkConfig:
     """Compatibility wrapper for existing config-loading callers."""
     return load_settings(path)
@@ -105,5 +124,6 @@ __all__ = [
     "TargetConfig",
     "TargetSettings",
     "load_config",
+    "load_dataset_settings",
     "load_settings",
 ]

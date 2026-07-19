@@ -1,0 +1,10 @@
+dataset:
+  provider: yahoo_finance
+  symbol: SPY
+  start_date: 1999-01-01
+  end_date: 2025-12-31
+  frequency: daily
+  cache_format: parquet
+  cache_directory: data/cache
+  output_directory: data/processed
+  return_price_column: adjusted_close

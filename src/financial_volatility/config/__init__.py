@@ -15,6 +15,7 @@ from financial_volatility.config.settings import (
     TargetConfig,
     TargetSettings,
     load_config,
+    load_dataset_settings,
     load_settings,
 )
 
@@ -33,5 +34,6 @@ __all__ = [
     "TargetConfig",
     "TargetSettings",
     "load_config",
+    "load_dataset_settings",
     "load_settings",
 ]

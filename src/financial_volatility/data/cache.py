@@ -17,6 +17,7 @@ def cache_path(
     symbol: str,
     start: str | date | pd.Timestamp | None,
     end: str | date | pd.Timestamp | None,
+    frequency: str = "daily",
 ) -> Path:
     """Build a deterministic cache path for one market data request."""
     filename = "_".join(
@@ -25,6 +26,7 @@ def cache_path(
             _slug(symbol),
             _date_part(start),
             _date_part(end),
+            _slug(frequency),
         ]
     )
     return Path(cache_dir) / f"{filename}.parquet"

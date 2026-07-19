@@ -19,10 +19,13 @@ from financial_volatility.config import (
     DatasetSettings,
     load_settings,
 )
+from financial_volatility.data.preparation import prepare_dataset
 from financial_volatility.models import ForecastModel, ModelRegistry
 from financial_volatility.pipelines.experiment import ExperimentPipeline
 
 app = typer.Typer(help="Financial volatility benchmark CLI.")
+dataset_app = typer.Typer(help="Acquire and inspect research datasets.")
+app.add_typer(dataset_app, name="dataset")
 VALIDATE_CONFIG_OPTION = typer.Option(
     ...,
     "--config",
@@ -35,6 +38,24 @@ RUN_CONFIG_OPTION = typer.Option(
     "-c",
     help="Path to YAML config.",
 )
+DATASET_CONFIG_OPTION = typer.Option(..., "--config", "-c", help="Dataset YAML config.")
+FORCE_REFRESH_OPTION = typer.Option(False, "--force-refresh")
+
+
+@dataset_app.command("prepare")
+def dataset_prepare(
+    config: Path = DATASET_CONFIG_OPTION,
+    force_refresh: bool = FORCE_REFRESH_OPTION,
+) -> None:
+    """Materialize a normalized and validated research dataset."""
+    try:
+        result = prepare_dataset(config, force_refresh=force_refresh)
+    except (ValueError, ValidationError) as error:
+        typer.echo(f"Dataset preparation failed: {error}", err=True)
+        raise typer.Exit(1) from error
+    typer.echo(f"Dataset: {result.dataset_path}")
+    typer.echo(f"Metadata: {result.metadata_path}")
+    typer.echo(f"Report: {result.report_path}")
 
 
 @app.command("validate-config")

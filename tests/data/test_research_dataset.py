@@ -97,6 +97,7 @@ def test_prepare_cache_force_refresh_metadata_and_cli(
     assert metadata["columns"][4] == "adjusted_close"
     assert first.report_path.exists()
     assert first.summary_path.exists()
+    assert (first.report_path.parent / "plots" / "spy_transformation_flow.png").exists()
     report = first.report_path.read_text(encoding="utf-8")
     assert "Daily adjusted-price log-return statistics" in report
     assert "skewness" in report

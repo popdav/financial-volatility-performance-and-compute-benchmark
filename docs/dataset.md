@@ -19,7 +19,8 @@ uv run fvbench dataset prepare --config configs/research/dataset_spy.yaml
 Use `--force-refresh` to bypass the deterministic Parquet cache. The command
 creates the normalized dataset and metadata in `data/processed`, a Markdown
 report and yearly summary in `results/dataset`, and three inspection plots in
-`results/dataset/plots`.
+`results/dataset/plots`, plus a diagram of the adjusted-price to log-return to
+21-day rolling-volatility transformation flow.
 
 Yahoo Finance is a convenient public source, not an immutable research archive.
 Historical values, adjustment calculations, API behavior, and availability can

@@ -246,6 +246,7 @@ def _write_inspection_outputs(
         figure.tight_layout()
         figure.savefig(plots / filename, dpi=150)
         plt.close(figure)
+    _write_transformation_flow_plot(plots / "spy_transformation_flow.png")
     index = cast(pd.DatetimeIndex, frame.index)
     yearly = frame.groupby(index.year).size()
     valid_returns = returns.dropna()
@@ -269,6 +270,45 @@ def _write_inspection_outputs(
     summary_path = output / "spy_dataset_summary.csv"
     summary.to_csv(summary_path, index=False)
     return report_path, summary_path
+
+
+def _write_transformation_flow_plot(path: Path) -> None:
+    """Render the inspection-only price-to-volatility transformation flow."""
+    figure, axis = plt.subplots(figsize=(6, 7))
+    axis.set_xlim(0, 1)
+    axis.set_ylim(0, 1)
+    axis.axis("off")
+    nodes = (
+        (0.82, "SPY\nadjusted price"),
+        (0.50, "Daily log returns\nlog(Pₜ / Pₜ₋₁)"),
+        (0.18, "21-day rolling volatility\nannualized standard deviation"),
+    )
+    for y_position, label in nodes:
+        axis.text(
+            0.5,
+            y_position,
+            label,
+            ha="center",
+            va="center",
+            fontsize=12,
+            bbox={
+                "boxstyle": "round,pad=0.7",
+                "facecolor": "#e8f1fa",
+                "edgecolor": "#285f8f",
+                "linewidth": 1.5,
+            },
+        )
+    for start, end in ((0.73, 0.59), (0.41, 0.27)):
+        axis.annotate(
+            "",
+            xy=(0.5, end),
+            xytext=(0.5, start),
+            arrowprops={"arrowstyle": "->", "color": "#285f8f", "lw": 2},
+        )
+    axis.set_title("SPY Inspection Transformation Flow", fontsize=14, pad=14)
+    figure.tight_layout()
+    figure.savefig(path, dpi=150, bbox_inches="tight")
+    plt.close(figure)
 
 
 def _report_markdown(

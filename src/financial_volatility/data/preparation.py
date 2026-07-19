@@ -10,6 +10,7 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import cast
 
+import exchange_calendars as xcals  # type: ignore[import-untyped]
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -328,6 +329,7 @@ def _report_markdown(
     minimum = pd.Timestamp(returns.idxmin())
     positive = f"{returns.loc[maximum]:.8f} ({maximum.date()})"
     negative = f"{returns.loc[minimum]:.8f} ({minimum.date()})"
+    quality = _dataset_quality_diagnostics(frame, metadata, returns)
     return_statistics = _text_table(
         pd.DataFrame(
             {
@@ -352,6 +354,10 @@ def _report_markdown(
 The configured range includes the dot-com period, global financial crisis, and
 COVID-19 period. This is calendar coverage only, not algorithmic regime labeling.
 
+## Dataset quality diagnostics
+
+{quality}
+
 ## First and last rows
 
 {first_last}
@@ -372,6 +378,70 @@ COVID-19 period. This is calendar coverage only, not algorithmic regime labeling
 
 {counts}
 """
+
+
+def _dataset_quality_diagnostics(
+    frame: pd.DataFrame, metadata: dict[str, object], returns: pd.Series
+) -> str:
+    """Summarize calendar coverage and conservative market-data diagnostics."""
+    requested_range = cast(list[str], metadata["requested_date_range"])
+    calendar_start = pd.Timestamp(requested_range[0]) - pd.Timedelta(days=10)
+    calendar_end = pd.Timestamp(requested_range[1]) + pd.Timedelta(days=10)
+    calendar = xcals.get_calendar("XNYS", start=calendar_start, end=calendar_end)
+    expected = calendar.sessions_in_range(requested_range[0], requested_range[1])
+    expected_dates = pd.DatetimeIndex(expected).tz_localize(None).normalize()
+    observed_dates = cast(pd.DatetimeIndex, frame.index).normalize()
+    missing_dates = expected_dates.difference(observed_dates)
+
+    return_mean = float(returns.mean())
+    return_std = float(returns.std())
+    outliers = int(((returns - return_mean).abs() > 4 * return_std).sum())
+
+    adjustment_factor = frame["adjusted_close"] / frame["close"]
+    factor_changes = adjustment_factor.apply(np.log).diff().abs()
+    inferred_splits = int((factor_changes > np.log(1.2)).sum())
+    inferred_dividend_adjustments = int(
+        ((factor_changes > 1e-4) & (factor_changes <= np.log(1.2))).sum()
+    )
+    missing_values = cast(dict[str, int], metadata["missing_value_counts"])
+    diagnostics = pd.DataFrame(
+        {
+            "value": [
+                len(frame),
+                len(expected_dates),
+                len(missing_dates),
+                metadata["duplicate_rows_removed"],
+                sum(missing_values.values()),
+                outliers,
+                inferred_splits,
+                inferred_dividend_adjustments,
+            ]
+        },
+        index=[
+            "trading_days",
+            "expected_trading_days_xnys",
+            "missing_trading_days",
+            "duplicate_rows_removed",
+            "missing_values",
+            "log_return_outliers_4_std",
+            "inferred_price_splits",
+            "inferred_dividend_adjustments",
+        ],
+    )
+    missing_text = (
+        "none"
+        if missing_dates.empty
+        else ", ".join(str(value.date()) for value in missing_dates)
+    )
+    notes = (
+        "Expected sessions use the XNYS calendar. Outliers are inspection flags "
+        "where absolute demeaned log return exceeds four sample standard "
+        "deviations. Split and dividend counts are inferred from changes in the "
+        "adjusted-close/close factor, with a one-basis-point noise threshold; "
+        "they are not provider corporate-action records."
+    )
+    table = _text_table(diagnostics)
+    return f"{table}\n\nMissing XNYS sessions: {missing_text}.\n\n{notes}"
 
 
 def _text_table(frame: pd.DataFrame) -> str:

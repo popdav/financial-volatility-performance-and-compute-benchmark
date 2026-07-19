@@ -101,6 +101,8 @@ def test_prepare_cache_force_refresh_metadata_and_cli(
     report = first.report_path.read_text(encoding="utf-8")
     assert "Daily adjusted-price log-return statistics" in report
     assert "skewness" in report
+    assert "expected_trading_days_xnys" in report
+    assert "inferred_dividend_adjustments" in report
     summary = pd.read_csv(first.summary_path)
     assert {
         "log_return_mean",

@@ -9,6 +9,24 @@
 The configured range includes the dot-com period, global financial crisis, and
 COVID-19 period. This is calendar coverage only, not algorithmic regime labeling.
 
+## Dataset quality diagnostics
+
+```text
+                               value
+trading_days                    6791
+expected_trading_days_xnys      6791
+missing_trading_days               0
+duplicate_rows_removed             0
+missing_values                     0
+log_return_outliers_4_std         43
+inferred_price_splits              0
+inferred_dividend_adjustments    109
+```
+
+Missing XNYS sessions: none.
+
+Expected sessions use the XNYS calendar. Outliers are inspection flags where absolute demeaned log return exceeds four sample standard deviations. Split and dividend counts are inferred from changes in the adjusted-close/close factor, with a one-basis-point noise threshold; they are not provider corporate-action records.
+
 ## First and last rows
 
 ```text

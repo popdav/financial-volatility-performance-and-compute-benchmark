@@ -22,6 +22,12 @@ report and yearly summary in `results/dataset`, and three inspection plots in
 `results/dataset/plots`, plus a diagram of the adjusted-price to log-return to
 21-day rolling-volatility transformation flow.
 
+The report compares observed dates with the official XNYS session calendar and
+reports missing sessions. It also flags four-standard-deviation log-return
+outliers. Price-split and dividend-adjustment counts are conservative inferences
+from changes in the `adjusted_close / close` factor, not authoritative Yahoo
+corporate-action records.
+
 Yahoo Finance is a convenient public source, not an immutable research archive.
 Historical values, adjustment calculations, API behavior, and availability can
 change without versioned releases. The cache, requested dates, Git revision, and

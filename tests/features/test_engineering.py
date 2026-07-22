@@ -1,148 +1,148 @@
-"""Feature engineering tests."""
+"""Deterministic tests for leakage-safe historical features."""
 
 import math
 
+import numpy as np
 import pandas as pd
 import pytest
 
-from financial_volatility.data.types import OHLCVData
 from financial_volatility.features.engineering import (
-    add_lagged_returns,
-    add_lagged_volatility,
+    FeatureConfig,
+    add_atr,
+    add_exponential_moving_averages,
     add_log_returns,
     add_moving_averages,
     add_realized_volatility,
+    add_rsi,
     add_simple_returns,
-    add_volume_change,
-    build_volatility_features,
+    add_volume_features,
+    build_feature_matrix,
 )
 
 
-def test_simple_returns_are_generated_from_close_prices() -> None:
-    """Simple returns use close-to-close percentage change."""
-    features = add_simple_returns(_ohlcv_frame())
-
-    assert features["return_1d"].iloc[1] == pytest.approx(0.01)
-    assert features["return_1d"].iloc[2] == pytest.approx(102.0 / 101.0 - 1.0)
-
-
-def test_log_returns_are_generated_from_close_prices() -> None:
-    """Log returns use log close price ratios."""
-    features = add_log_returns(_ohlcv_frame())
-
-    assert features["log_return_1d"].iloc[1] == pytest.approx(math.log(101.0 / 100.0))
+def test_daily_returns_use_adjusted_close_and_preserve_index() -> None:
+    frame = _frame()
+    frame["close"] = frame["adjusted_close"] * 2
+    simple = add_simple_returns(frame)
+    logged = add_log_returns(frame)
+    assert simple.index.equals(frame.index)
+    assert pd.isna(logged["log_return"].iloc[0])
+    expected = frame["adjusted_close"].iloc[1] / frame["adjusted_close"].iloc[0]
+    assert logged["log_return"].iloc[1] == pytest.approx(math.log(expected))
+    assert simple["simple_return"].iloc[1] == pytest.approx(expected - 1)
 
 
-def test_rolling_volatility_is_calculated_from_log_returns() -> None:
-    """Realized volatility is a rolling standard deviation of log returns."""
-    frame = add_log_returns(_ohlcv_frame())
-
-    features = add_realized_volatility(frame, windows=(5,))
-
-    expected = frame["log_return_1d"].rolling(window=5).std().iloc[5]
-    assert features["realized_volatility_5d"].iloc[5] == pytest.approx(expected)
+def test_returns_reject_missing_adjusted_close() -> None:
+    with pytest.raises(ValueError, match="adjusted_close"):
+        add_log_returns(_frame().drop(columns="adjusted_close"))
 
 
-def test_lagged_returns_are_shifted_correctly() -> None:
-    """Lagged return features shift the simple return column."""
-    frame = add_simple_returns(_ohlcv_frame())
+def test_rolling_volatility_is_sample_std_and_annualized() -> None:
+    returns = add_log_returns(_frame())
+    result = add_realized_volatility(returns, windows=(5,))
+    expected = returns["log_return"].iloc[1:6].std() * np.sqrt(252)
+    assert result["historical_volatility_5"].iloc[5] == pytest.approx(expected)
+    assert result["historical_volatility_5"].iloc[:5].isna().all()
 
-    features = add_lagged_returns(frame, lags=(1, 5))
 
-    assert features["return_lag_1"].iloc[2] == pytest.approx(
-        frame["return_1d"].iloc[1],
+def test_sma_and_ema_windows_are_correct() -> None:
+    frame = _frame()
+    sma = add_moving_averages(frame, windows=(5,))
+    ema = add_exponential_moving_averages(frame, windows=(5,))
+    assert sma["sma_5"].iloc[4] == pytest.approx(
+        frame["adjusted_close"].iloc[:5].mean()
     )
-    assert features["return_lag_5"].iloc[6] == pytest.approx(
-        frame["return_1d"].iloc[1],
+    expected_ema = (
+        frame["adjusted_close"].ewm(span=5, adjust=False, min_periods=5).mean()
+    )
+    pd.testing.assert_series_equal(ema["ema_5"], expected_ema, check_names=False)
+
+
+def test_rsi_uses_wilder_smoothing() -> None:
+    frame = _frame(rows=20)
+    result = add_rsi(frame, period=3)["rsi_3"]
+    delta = frame["adjusted_close"].diff()
+    gains = delta.clip(lower=0).iloc[1:4].mean()
+    losses = (-delta.clip(upper=0)).iloc[1:4].mean()
+    expected = 100 - 100 / (1 + gains / losses)
+    assert result.iloc[3] == pytest.approx(expected)
+    next_gain = max(delta.iloc[4], 0)
+    next_loss = max(-delta.iloc[4], 0)
+    expected_next = 100 - 100 / (
+        1 + ((gains * 2 + next_gain) / 3) / ((losses * 2 + next_loss) / 3)
+    )
+    assert result.iloc[4] == pytest.approx(expected_next)
+
+
+def test_atr_uses_true_range_and_wilder_smoothing() -> None:
+    frame = _frame()
+    frame.iloc[1, frame.columns.get_loc("high")] = 110
+    result = add_atr(frame, period=3)["atr_3"]
+    previous = frame["close"].shift(1)
+    true_range = pd.concat(
+        [
+            (frame.high - frame.low),
+            (frame.high - previous).abs(),
+            (frame.low - previous).abs(),
+        ],
+        axis=1,
+    ).max(axis=1)
+    assert result.iloc[2] == pytest.approx(true_range.iloc[:3].mean())
+    assert result.iloc[3] == pytest.approx(
+        (result.iloc[2] * 2 + true_range.iloc[3]) / 3
     )
 
 
-def test_lagged_volatility_is_shifted_correctly() -> None:
-    """Lagged volatility features shift realized volatility."""
-    frame = add_realized_volatility(_ohlcv_frame(), windows=(5,))
-
-    features = add_lagged_volatility(frame, lags=(1,))
-
-    assert features["volatility_lag_1"].iloc[6] == pytest.approx(
-        frame["realized_volatility_5d"].iloc[5],
+def test_volume_features_are_log_and_percentage_change() -> None:
+    frame = _frame()
+    result = add_volume_features(frame)
+    assert result["log_volume"].iloc[0] == pytest.approx(np.log(frame.volume.iloc[0]))
+    assert result["volume_change"].iloc[1] == pytest.approx(
+        frame.volume.iloc[1] / frame.volume.iloc[0] - 1
     )
 
 
-def test_moving_averages_are_calculated_from_close_prices() -> None:
-    """Moving averages are rolling means of close prices."""
-    frame = _ohlcv_frame()
-
-    features = add_moving_averages(frame, windows=(5, 21))
-
-    assert features["ma_5"].iloc[4] == pytest.approx(frame["close"].iloc[:5].mean())
-    assert features["ma_21"].iloc[20] == pytest.approx(frame["close"].iloc[:21].mean())
-
-
-def test_volume_change_is_generated_from_volume() -> None:
-    """Volume change uses one-period percentage change."""
-    frame = _ohlcv_frame()
-
-    features = add_volume_change(frame)
-
-    assert features["volume_change"].iloc[1] == pytest.approx(1001 / 1000 - 1)
-
-
-def test_default_feature_generation_works_on_ohlcv_data() -> None:
-    """The default feature set accepts OHLCVData and returns engineered features."""
-    data = OHLCVData(_ohlcv_frame())
-
-    features = build_volatility_features(data)
-
-    assert list(features.columns) == [
-        "open",
-        "high",
-        "low",
-        "close",
-        "volume",
-        "return_1d",
-        "log_return_1d",
-        "realized_volatility_5d",
-        "realized_volatility_21d",
-        "return_lag_1",
-        "return_lag_5",
-        "volatility_lag_1",
-        "ma_5",
-        "ma_21",
-        "volume_change",
-    ]
-    assert not features.isna().any().any()
-    assert features.index[0] == pd.Timestamp("2026-01-22")
+def test_feature_config_controls_generation_and_metadata() -> None:
+    config = FeatureConfig.from_mapping(
+        {
+            "features": {
+                "price": {"enabled": False},
+                "volatility": {"windows": [5]},
+                "sma": {"windows": []},
+                "ema": {"windows": []},
+                "rsi": {"enabled": False},
+                "atr": {"enabled": False},
+                "volume": {"enabled": False},
+            }
+        }
+    )
+    features, metadata = build_feature_matrix(_frame(), config=config)
+    assert list(features) == ["historical_volatility_5"]
+    assert metadata[0].category == "volatility"
+    assert metadata[0].rolling_window == 5
 
 
-def test_default_feature_generation_drops_insufficient_history_rows() -> None:
-    """Rolling-window and lag warm-up rows are dropped from the final output."""
-    features = build_volatility_features(_ohlcv_frame())
-
-    assert len(features) == 4
-    assert features.index[0] == pd.Timestamp("2026-01-22")
-
-
-def test_feature_functions_do_not_mutate_input_frames() -> None:
-    """Feature engineering returns new DataFrames instead of mutating inputs."""
-    frame = _ohlcv_frame()
-
-    _ = build_volatility_features(frame)
-
-    assert "return_1d" not in frame.columns
-    assert "log_return_1d" not in frame.columns
+def test_features_at_t_do_not_change_when_future_data_changes() -> None:
+    frame = _frame(rows=80)
+    before, _ = build_feature_matrix(frame)
+    changed = frame.copy()
+    changed.iloc[61:, changed.columns.get_loc("adjusted_close")] *= 10
+    changed.iloc[61:, changed.columns.get_loc("volume")] *= 7
+    after, _ = build_feature_matrix(changed)
+    pd.testing.assert_series_equal(before.iloc[60], after.iloc[60])
 
 
-def _ohlcv_frame() -> pd.DataFrame:
-    """Create synthetic OHLCV data with enough history for default features."""
-    dates = pd.date_range("2026-01-01", periods=25, freq="D")
-    close = [100.0 + index for index in range(25)]
+def _frame(rows: int = 90) -> pd.DataFrame:
+    index = pd.date_range("2025-01-01", periods=rows, freq="D")
+    adjusted = 100 + np.arange(rows) * 0.3 + np.sin(np.arange(rows))
     return pd.DataFrame(
         {
-            "open": close,
-            "high": [price + 1.0 for price in close],
-            "low": [price - 1.0 for price in close],
-            "close": close,
-            "volume": [1000 + index for index in range(25)],
+            "open": adjusted - 0.4,
+            "high": adjusted + 1.2,
+            "low": adjusted - 1,
+            "close": adjusted + 0.1,
+            "adjusted_close": adjusted,
+            "volume": 1000 + np.arange(rows) ** 2,
         },
-        index=dates,
+        index=index,
     )

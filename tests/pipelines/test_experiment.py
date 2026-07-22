@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import Self
 
+import numpy as np
 import pandas as pd
 
 from financial_volatility.benchmark import (
@@ -92,7 +93,7 @@ def test_experiment_pipeline_runs_end_to_end_with_dummy_model(
     assert len(result_rows) == 1
     assert result_rows["experiment_id"].iloc[0] == result.experiment_id
     assert {"rmse", "mae", "mape"}.issubset(metrics)
-    assert result.target_name == "realized_volatility_target_5d"
+    assert result.target_name == "future_realized_volatility_5d"
     assert result.horizon == 5
     assert result.forecast is not None
     assert len(result.forecast.values) == result.metadata["prediction_count"]
@@ -130,15 +131,16 @@ def test_experiment_pipeline_preserves_chronological_train_test_split(
 
 def _write_synthetic_csv(path: Path) -> None:
     """Write enough OHLCV rows for feature warm-up and splitting."""
-    dates = pd.date_range("2026-01-01", periods=32, freq="D")
-    close = [100.0 + index for index in range(len(dates))]
+    dates = pd.date_range("2026-01-01", periods=100, freq="D")
+    close = [100.0 + index / 5 + 2 * np.sin(index) for index in range(len(dates))]
     frame = pd.DataFrame(
         {
             "date": dates,
             "open": close,
-            "high": [price + 1.0 for price in close],
-            "low": [price - 1.0 for price in close],
+            "high": [price + 1.0 + index / 100 for index, price in enumerate(close)],
+            "low": [price - 1.0 - index / 100 for index, price in enumerate(close)],
             "close": close,
+            "adjusted_close": close,
             "volume": [1000 + index for index in range(len(dates))],
         },
     )

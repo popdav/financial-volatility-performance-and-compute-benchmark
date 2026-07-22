@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -33,6 +35,7 @@ class ExperimentPipeline:
     symbol: str | None = None
     dataset_name: str = "local_csv"
     hardware_target: HardwareTarget | str = HardwareTarget.CPU
+    feature_config: Mapping[str, Any] | None = None
 
     def run(self) -> ExperimentResult:
         """Execute load, feature generation, split, benchmark, and result storage."""
@@ -44,6 +47,7 @@ class ExperimentPipeline:
         features, target = build_supervised_dataset(
             market_data,
             horizon=self.target_horizon,
+            feature_config=self.feature_config,
         )
         supervised = features.join(target)
 

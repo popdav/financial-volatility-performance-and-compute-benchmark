@@ -66,6 +66,7 @@ class BenchmarkSettings(ExtensibleSettings):
 
     dataset: DatasetSettings
     target: TargetSettings
+    features: dict[str, Any] = Field(default_factory=dict)
     model: ModelSettings
     hardware: HardwareSettings
     output: OutputSettings

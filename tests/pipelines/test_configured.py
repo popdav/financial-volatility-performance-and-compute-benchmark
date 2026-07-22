@@ -72,7 +72,7 @@ def test_config_driven_dummy_experiment_works(tmp_path: Path) -> None:
     )
 
     assert result.model.name == "dummy"
-    assert result.target_name == "realized_volatility_target_5d"
+    assert result.target_name == "future_realized_volatility_5d"
     assert result.horizon == 5
     assert (tmp_path / "results.csv").exists()
 
@@ -138,14 +138,17 @@ output:
 
 def _ohlcv_frame() -> pd.DataFrame:
     """Create synthetic OHLCV data."""
-    index = pd.date_range("2026-01-01", periods=80, freq="D")
-    close = np.linspace(100.0, 130.0, num=len(index))
+    index = pd.date_range("2026-01-01", periods=120, freq="D")
+    positions = np.arange(len(index), dtype=np.float64)
+    close = 100.0 + positions / 5.0 + 2.0 * np.sin(positions)
+    spread = 1.0 + positions / 100.0
     return pd.DataFrame(
         {
             "open": close - 0.5,
-            "high": close + 1.0,
-            "low": close - 1.0,
+            "high": close + spread,
+            "low": close - spread,
             "close": close,
+            "adjusted_close": close,
             "volume": np.linspace(1000.0, 1500.0, num=len(index)),
         },
         index=index,

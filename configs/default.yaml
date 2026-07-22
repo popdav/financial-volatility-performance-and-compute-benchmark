@@ -9,6 +9,24 @@ target:
   name: realized_volatility
   horizon: 5
 
+features:
+  price:
+    enabled: true
+  volatility:
+    windows: [5, 10, 21, 63]
+  sma:
+    windows: [5, 10, 21, 50]
+  ema:
+    windows: [10, 21, 50]
+  rsi:
+    enabled: true
+    period: 14
+  atr:
+    enabled: true
+    period: 14
+  volume:
+    enabled: true
+
 model:
   name: linear_regression
   parameters: {}

@@ -95,6 +95,7 @@ def run(
         target_horizon=settings.target.horizon,
         dataset_name=str(getattr(settings.dataset, "name", settings.dataset.provider)),
         hardware_target=HardwareTarget(settings.hardware.device),
+        feature_config={"features": settings.features},
     )
     try:
         result = pipeline.run()
@@ -143,15 +144,18 @@ def _resolve_csv_path(dataset_settings: DatasetSettings, output_dir: Path) -> Pa
 
 def _write_synthetic_ohlcv_csv(path: Path) -> None:
     """Create a deterministic OHLCV CSV for CLI smoke runs."""
-    dates = pd.date_range("2026-01-01", periods=80, freq="D")
-    close = np.linspace(100.0, 125.0, num=len(dates))
+    dates = pd.date_range("2026-01-01", periods=120, freq="D")
+    positions = np.arange(len(dates), dtype=np.float64)
+    close = 100.0 + positions / 5.0 + 2.0 * np.sin(positions)
+    spread = 1.0 + positions / 100.0
     frame = pd.DataFrame(
         {
             "date": dates,
             "open": close - 0.5,
-            "high": close + 1.0,
-            "low": close - 1.0,
+            "high": close + spread,
+            "low": close - spread,
             "close": close,
+            "adjusted_close": close,
             "volume": np.linspace(1000.0, 1500.0, num=len(dates)),
         }
     )

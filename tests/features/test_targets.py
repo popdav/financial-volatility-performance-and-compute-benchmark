@@ -1,117 +1,108 @@
-"""Target construction and supervised dataset tests."""
+"""Target alignment, cleaning, and validation tests."""
 
 import numpy as np
 import pandas as pd
 import pytest
 
-from financial_volatility.data.types import OHLCVData
 from financial_volatility.features.engineering import (
+    FeatureConfig,
     build_supervised_dataset,
     make_volatility_target,
+    validate_supervised_dataset,
 )
 
 
-def test_make_volatility_target_horizon_1_uses_next_return() -> None:
-    """A one-step target uses only the next log return."""
-    frame = _return_frame()
-
-    target = make_volatility_target(frame, horizon=1)
-
-    assert target.iloc[0] == pytest.approx(abs(frame["log_return_1d"].iloc[1]))
-    assert pd.isna(target.iloc[-1])
-
-
-def test_make_volatility_target_horizon_5_uses_future_returns() -> None:
-    """Multi-step targets aggregate only future returns."""
-    frame = _return_frame()
-
-    target = make_volatility_target(frame, horizon=5)
-
-    expected = np.sqrt(np.mean(np.square(frame["log_return_1d"].iloc[1:6])))
-    assert target.iloc[0] == pytest.approx(expected)
+@pytest.mark.parametrize("horizon", [5, 21])
+def test_target_uses_exactly_next_h_returns_and_annualization(horizon: int) -> None:
+    frame = _frame(100)
+    returns = np.log(frame.adjusted_close / frame.adjusted_close.shift(1))
+    target = make_volatility_target(frame, horizon=horizon)
+    expected = np.sqrt(np.mean(np.square(returns.iloc[11 : 11 + horizon]))) * np.sqrt(
+        252 / horizon
+    )
+    assert target.iloc[10] == pytest.approx(expected)
+    assert target.iloc[-horizon:].isna().all()
 
 
-def test_make_volatility_target_horizon_21_uses_future_returns() -> None:
-    """The monthly thesis horizon aggregates the next 21 returns."""
-    frame = _return_frame(rows=40)
-
-    target = make_volatility_target(frame, horizon=21)
-
-    expected = np.sqrt(np.mean(np.square(frame["log_return_1d"].iloc[1:22])))
-    assert target.iloc[0] == pytest.approx(expected)
-
-
-def test_make_volatility_target_rejects_invalid_horizon() -> None:
-    """Forecast horizons must be positive."""
+@pytest.mark.parametrize("horizon", [0, 1, 2, 6, 22])
+def test_target_rejects_unsupported_horizons(horizon: int) -> None:
     with pytest.raises(ValueError, match="horizon"):
-        make_volatility_target(_return_frame(), horizon=0)
+        make_volatility_target(_frame(50), horizon=horizon)
 
 
-def test_build_supervised_dataset_returns_aligned_clean_X_y() -> None:
-    """The supervised builder returns equal-length clean features and targets."""
-    X, y = build_supervised_dataset(
-        OHLCVData(_ohlcv_frame()),
-        horizon=5,
-        volatility_windows=(5,),
-        return_lags=(1,),
-        volatility_lags=(1,),
-        moving_average_windows=(5,),
-    )
+def test_target_does_not_include_return_at_t() -> None:
+    frame = _frame(50)
+    frame["log_return"] = np.log(frame.adjusted_close / frame.adjusted_close.shift(1))
+    original = make_volatility_target(frame, horizon=5)
+    changed = frame.copy()
+    changed.iloc[10, changed.columns.get_loc("log_return")] *= 100
+    altered = make_volatility_target(changed, horizon=5)
+    assert altered.iloc[10] == pytest.approx(original.iloc[10])
 
-    assert len(X) == len(y)
-    assert len(X) > 0
-    assert isinstance(X.index, pd.DatetimeIndex)
+
+def test_supervised_builder_aligns_cleans_and_reports_removed_rows() -> None:
+    frame = _frame(120)
+    X, y = build_supervised_dataset(frame, horizon=21)
+    report = validate_supervised_dataset(X, y, input_rows=len(frame))
     assert X.index.equals(y.index)
-    assert not X.isna().any().any()
-    assert not y.isna().any()
-    assert y.name == "realized_volatility_target_5d"
+    assert X.index[0] == frame.index[63]
+    assert X.index[-1] == frame.index[-22]
+    assert not X.isna().any().any() and not y.isna().any()
+    assert report.removed_rows == len(frame) - len(X)
 
 
-def test_build_supervised_dataset_preserves_no_lookahead_alignment() -> None:
-    """The first target remains based on returns after the feature timestamp."""
-    X, y = build_supervised_dataset(
-        _ohlcv_frame(rows=30),
-        horizon=5,
-        volatility_windows=(5,),
-        return_lags=(1,),
-        volatility_lags=(1,),
-        moving_average_windows=(5,),
-    )
-    _ = X
-    feature_timestamp = y.index[0]
-    frame = _return_frame(rows=30)
-    position = frame.index.get_loc(feature_timestamp)
-
-    expected = np.sqrt(
-        np.mean(np.square(frame["log_return_1d"].iloc[position + 1 : position + 6]))
-    )
-    assert y.iloc[0] == pytest.approx(expected)
+def test_cleaning_occurs_after_alignment_and_handles_infinity() -> None:
+    frame = _frame(90)
+    frame.iloc[70, frame.columns.get_loc("volume")] = 0
+    X, y = build_supervised_dataset(frame, horizon=5)
+    assert np.isfinite(X.to_numpy()).all() and np.isfinite(y.to_numpy()).all()
 
 
-def _return_frame(rows: int = 30) -> pd.DataFrame:
-    """Create deterministic log returns."""
-    index = pd.date_range("2026-01-01", periods=rows, freq="D")
-    close = pd.Series(np.linspace(100.0, 130.0, num=rows), index=index)
+def test_validation_rejects_constant_features() -> None:
+    index = pd.date_range("2025-01-01", periods=3)
+    with pytest.raises(ValueError, match="constant"):
+        validate_supervised_dataset(
+            pd.DataFrame({"x": [1, 1, 1]}, index=index),
+            pd.Series([1, 2, 3], index=index),
+        )
+
+
+def test_builder_accepts_yaml_shaped_configuration() -> None:
+    config = {
+        "features": {
+            "price": {"enabled": True},
+            "volatility": {"windows": [5]},
+            "sma": {"windows": [5]},
+            "ema": {"windows": []},
+            "rsi": {"enabled": False},
+            "atr": {"enabled": False},
+            "volume": {"enabled": True},
+        }
+    }
+    X, _ = build_supervised_dataset(_frame(50), horizon=5, feature_config=config)
+    assert list(X) == [
+        "log_return",
+        "simple_return",
+        "historical_volatility_5",
+        "sma_5",
+        "log_volume",
+        "volume_change",
+    ]
+    assert FeatureConfig.from_mapping(config).volatility_windows == (5,)
+
+
+def _frame(rows: int) -> pd.DataFrame:
+    index = pd.date_range("2025-01-01", periods=rows)
+    adjusted = 100 + np.arange(rows) * 0.2 + np.sin(np.arange(rows) / 2)
+    spread = 1 + 0.1 * np.sin(np.arange(rows) / 3)
     return pd.DataFrame(
         {
-            "close": close,
-            "log_return_1d": np.log(close / close.shift(1)),
-        },
-        index=index,
-    )
-
-
-def _ohlcv_frame(rows: int = 40) -> pd.DataFrame:
-    """Create synthetic OHLCV data."""
-    index = pd.date_range("2026-01-01", periods=rows, freq="D")
-    close = np.linspace(100.0, 130.0, num=rows)
-    return pd.DataFrame(
-        {
-            "open": close - 0.5,
-            "high": close + 1.0,
-            "low": close - 1.0,
-            "close": close,
-            "volume": np.linspace(1000.0, 1500.0, num=rows),
+            "open": adjusted - 0.5,
+            "high": adjusted + spread,
+            "low": adjusted - spread,
+            "close": adjusted,
+            "adjusted_close": adjusted,
+            "volume": 1000 + np.arange(rows) ** 2,
         },
         index=index,
     )

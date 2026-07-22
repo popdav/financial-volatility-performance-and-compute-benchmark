@@ -34,6 +34,7 @@ def run_experiment_from_config(
         target_horizon=settings.target.horizon,
         dataset_name=str(getattr(settings.dataset, "name", settings.dataset.provider)),
         hardware_target=HardwareTarget(settings.hardware.device),
+        feature_config={"features": settings.features},
     )
     return pipeline.run()
 

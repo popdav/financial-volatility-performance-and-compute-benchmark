@@ -1,0 +1,18 @@
+feature,category,rolling_window,description
+log_return,price,1.0,Daily adjusted-price log return.
+simple_return,price,1.0,Daily adjusted-price simple return.
+historical_volatility_5,volatility,5.0,Annualized 5-day standard deviation of log returns.
+historical_volatility_10,volatility,10.0,Annualized 10-day standard deviation of log returns.
+historical_volatility_21,volatility,21.0,Annualized 21-day standard deviation of log returns.
+historical_volatility_63,volatility,63.0,Annualized 63-day standard deviation of log returns.
+sma_5,trend,5.0,5-day simple moving average.
+sma_10,trend,10.0,10-day simple moving average.
+sma_21,trend,21.0,21-day simple moving average.
+sma_50,trend,50.0,50-day simple moving average.
+ema_10,trend,10.0,10-day exponential moving average.
+ema_21,trend,21.0,21-day exponential moving average.
+ema_50,trend,50.0,50-day exponential moving average.
+rsi_14,momentum,14.0,Wilder relative strength index.
+atr_14,volatility,14.0,Wilder average true range.
+log_volume,volume,,Natural logarithm of daily volume.
+volume_change,volume,1.0,Daily percentage volume change.
